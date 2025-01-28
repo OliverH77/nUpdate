@@ -14,7 +14,8 @@ using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Ionic.Zip;
+//using Ionic.Zip;
+using System.IO.Compression;
 using MySql.Data.MySqlClient;
 using nUpdate.Administration.History;
 using nUpdate.Administration.Properties;
@@ -1135,14 +1136,15 @@ namespace nUpdate.Administration.UI.Dialogs
                 {
                     Invoke(new Action(() => loadingLabel.Text = $"Migrating package {entry.LiteralVersion}..."));
 
-                    using (var stream = File.OpenRead(packageFile))
-                    {
-                        using (ZipFile zip = ZipFile.Read(stream))
-                        {
-                            zip.ParallelDeflateThreshold = -1;
-                            zip.ExtractAll(extractedPackageDirectory);
-                        }
-                    }
+                    ZipFile.ExtractToDirectory(packageFile, extractedPackageDirectory);
+                    //using (var stream = File.OpenRead(packageFile))
+                    //{     
+                    //    using (ZipFile zip = ZipFile.Read(stream))
+                    //    {
+                    //        zip.ParallelDeflateThreshold = -1;
+                    //        zip.ExtractAll(extractedPackageDirectory);
+                    //    }
+                    //}
 
                     File.Delete(packageFile);
 

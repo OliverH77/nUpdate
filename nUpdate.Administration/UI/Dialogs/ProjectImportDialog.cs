@@ -7,7 +7,8 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using Ionic.Zip;
+//using Ionic.Zip;
+using System.IO.Compression;
 using nUpdate.Administration.UI.Popups;
 using nUpdate.Updating;
 
@@ -140,10 +141,11 @@ namespace nUpdate.Administration.UI.Dialogs
                     if (!Directory.Exists(projectPath))
                         Directory.CreateDirectory(projectPath);
 
-                    using (var zip = new ZipFile(projectToImportTextBox.Text))
-                    {
-                        zip.ExtractAll(folderPath);
-                    }
+                    ZipFile.ExtractToDirectory(projectToImportTextBox.Text, folderPath, true);
+                    //using (var zip = new ZipFile(projectToImportTextBox.Text))
+                    //{
+                    //    zip.ExtractAll(folderPath);
+                    //}
 
                     if (File.Exists(statisticsFilePath))
                         File.Move(statisticsFilePath, Path.Combine(projectPath, "statistics.php"));
@@ -190,26 +192,53 @@ namespace nUpdate.Administration.UI.Dialogs
                 {
                     string projectPath =
                         Path.Combine(Program.Path, "Projects", projectsListBox.SelectedItem.ToString());
-                    using (var zip = new ZipFile())
+
+
+
+                    using (FileStream zipToOpen = new FileStream(projectOutputPathTextBox.Text, FileMode.OpenOrCreate))
                     {
-                        string statisticsFilePath = Path.Combine(projectPath, "statistics.php");
-                        if (File.Exists(statisticsFilePath))
-                            zip.AddFile(statisticsFilePath, "/");
-                        zip.AddFile(
-                            _projectConfigurations.First(item => item.Name == projectsListBox.SelectedItem.ToString())
-                                .Path, "/");
-
-                        foreach (
-                            var versionDirectory in
-                            new DirectoryInfo(projectPath).GetDirectories()
-                                .Where(item => UpdateVersion.IsValid(item.Name)))
+                        using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
                         {
-                            zip.AddDirectoryByName(versionDirectory.Name);
-                            zip.AddDirectory(versionDirectory.FullName, versionDirectory.Name);
-                        }
+                            string statisticsFilePath = Path.Combine(projectPath, "statistics.php");
+                            if (File.Exists(statisticsFilePath))
+                            {
+                                archive.CreateEntryFromFile(statisticsFilePath, "statistics.php");
+                            }
 
-                        zip.Save(projectOutputPathTextBox.Text);
+                            string projectFilePath = _projectConfigurations.First(item => item.Name == projectsListBox.SelectedItem.ToString()).Path;
+                            archive.CreateEntryFromFile(projectFilePath, Path.GetFileName(projectFilePath));
+
+                            foreach (var versionDirectory in new DirectoryInfo(projectPath).GetDirectories().Where(item => UpdateVersion.IsValid(item.Name)))
+                            {
+                                foreach (var file in versionDirectory.GetFiles())
+                                {
+                                    string entryName = Path.Combine(versionDirectory.Name, file.Name);
+                                    archive.CreateEntryFromFile(file.FullName, entryName);
+                                }
+                            }
+                        }
                     }
+                    
+                    //using (var zip = new ZipFile())
+                    //{
+                    //    string statisticsFilePath = Path.Combine(projectPath, "statistics.php");
+                    //    if (File.Exists(statisticsFilePath))
+                    //        zip.AddFile(statisticsFilePath, "/");
+                    //    zip.AddFile(
+                    //        _projectConfigurations.First(item => item.Name == projectsListBox.SelectedItem.ToString())
+                    //            .Path, "/");
+
+                    //    foreach (
+                    //        var versionDirectory in
+                    //        new DirectoryInfo(projectPath).GetDirectories()
+                    //            .Where(item => UpdateVersion.IsValid(item.Name)))
+                    //    {
+                    //        zip.AddDirectoryByName(versionDirectory.Name);
+                    //        zip.AddDirectory(versionDirectory.FullName, versionDirectory.Name);
+                    //    }
+
+                    //    zip.Save(projectOutputPathTextBox.Text);
+                    //}
                 }
                 catch (Exception ex)
                 {
