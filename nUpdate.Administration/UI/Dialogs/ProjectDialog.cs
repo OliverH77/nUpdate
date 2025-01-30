@@ -1150,13 +1150,15 @@ namespace nUpdate.Administration.UI.Dialogs
 
                     File.WriteAllText(Path.Combine(extractedPackageDirectory, "operations.json"),
                         Serializer.Serialize(entry.Operations));
-                    using (var newZip = new ZipFile())
-                    {
-                        newZip.ParallelDeflateThreshold = -1;
-                        newZip.UseZip64WhenSaving = Zip64Option.AsNecessary;
-                        newZip.AddDirectory(extractedPackageDirectory);
-                        newZip.Save(packageFile);
-                    }
+                    ZipFile.CreateFromDirectory(extractedPackageDirectory, packageFile);
+                    
+                    //using (var newZip = new ZipFile())
+                    //{
+                    //    newZip.ParallelDeflateThreshold = -1;
+                    //    newZip.UseZip64WhenSaving = Zip64Option.AsNecessary;
+                    //    newZip.AddDirectory(extractedPackageDirectory);
+                    //    newZip.Save(packageFile);
+                    //}
 
                     Directory.Delete(extractedPackageDirectory, true);
                     entry.Operations = null;
